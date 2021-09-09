@@ -22,6 +22,8 @@ from ofa.imagenet_classification.run_manager.run_manager import (
     RunManager)
 from ofa.utils import MyRandomResizedCrop, download_url
 
+# imagenet tranformer + cifar dataset = top1 83%
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--task', type=str, default='max', choices=[
     'kernel', 'depth', 'expand',
@@ -86,7 +88,7 @@ elif args.task == 'expand':
 elif args.task == "max":
     args.path = 'exp/teachernet'
     args.dynamic_batch_size = 1
-    args.n_epochs = 300
+    args.n_epochs = 200
     args.base_lr = 0.025
     args.warmup_epochs = 5
     args.warmup_lr = -1
@@ -105,7 +107,7 @@ args.valid_size = 10000
 args.opt_type = 'sgd'
 args.momentum = 0.9
 args.no_nesterov = False
-args.weight_decay = 3e-5
+args.weight_decay = 3e-4 #3e-5 
 args.label_smoothing = 0.1
 args.no_decay_keys = 'bn#bias'
 args.fp16_allreduce = False
@@ -114,7 +116,7 @@ args.model_init = 'he_fout'
 args.validation_frequency = 1
 args.print_frequency = 10
 
-args.n_worker = 12
+args.n_worker = 8
 args.resize_scale = 0.08
 args.distort_color = 'tf'
 args.image_size = '32'

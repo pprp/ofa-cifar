@@ -162,11 +162,14 @@ class MobileNetV3(MyNetwork):
 
 
 class MobileNetV3Large(MobileNetV3):
+	'''
+	to avoid overfitting problem slim some channels
+	'''
 
 	def __init__(self, n_classes=10, width_mult=1.0, bn_param=(0.1, 1e-5), dropout_rate=0.2,
 	             ks=None, expand_ratio=None, depth_param=None, stage_width_list=None):
 		input_channel = 16
-		last_channel = 1280
+		last_channel = 512
 
 		input_channel = make_divisible(input_channel * width_mult, MyNetwork.CHANNEL_DIVISIBLE)
 		last_channel = make_divisible(last_channel * width_mult, MyNetwork.CHANNEL_DIVISIBLE) \
@@ -193,13 +196,14 @@ class MobileNetV3Large(MobileNetV3):
 				[3, 184, 80, False, 'h_swish', 1, None],  # 2.3
 			],
 			'4': [
-				[3, 480, 112, True, 'h_swish', 1, None],  # 6
-				[3, 672, 112, True, 'h_swish', 1, None],  # 6
+				# [3, 480, 112, True, 'h_swish', 1, None],  # 6
+				[3, 280, 100, True, 'h_swish', 1, None],  # 6 
+				[3, 320, 100, True, 'h_swish', 1, None],  # 6
 			],
 			'5': [
-				[5, 672, 160, True, 'h_swish', 2, None],  # 6
-				[5, 960, 160, True, 'h_swish', 1, None],  # 6
-				[5, 960, 160, True, 'h_swish', 1, None],  # 6
+				[5, 540, 120, True, 'h_swish', 2, None],  # 6
+				[5, 640, 120, True, 'h_swish', 1, None],  # 6
+				[5, 640, 120, True, 'h_swish', 1, None],  # 6
 			]
 		}
 
