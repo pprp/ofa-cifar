@@ -86,8 +86,8 @@ elif args.task == 'expand':
 elif args.task == "max":
     args.path = 'exp/teachernet'
     args.dynamic_batch_size = 1
-    args.n_epochs = 200
-    args.base_lr = 0.1
+    args.n_epochs = 300
+    args.base_lr = 0.025
     args.warmup_epochs = 5
     args.warmup_lr = -1
     args.ks_list = '5'
@@ -114,7 +114,7 @@ args.model_init = 'he_fout'
 args.validation_frequency = 1
 args.print_frequency = 10
 
-args.n_worker = 8
+args.n_worker = 12
 args.resize_scale = 0.08
 args.distort_color = 'tf'
 args.image_size = '32'
@@ -130,18 +130,12 @@ args.width_mult_list = '1.0'
 args.dy_conv_scaling_mode = 1
 args.independent_distributed_sampling = False
 
-args.kd_ratio = 0  # 1.0
+args.kd_ratio = 1.0
 args.kd_type = 'ce'
 
 
 if __name__ == '__main__':
     os.makedirs(args.path, exist_ok=True)
-
-    if args.kd_ratio > 0:
-        args.teacher_path = download_url(
-            'https://hanlab.mit.edu/files/OnceForAll/ofa_checkpoints/ofa_D4_E6_K7',
-            model_dir='.torch/ofa_checkpoints/0'
-        )
 
     num_gpus = 0
 
@@ -195,38 +189,28 @@ if __name__ == '__main__':
     args.width_mult_list = args.width_mult_list[0] if len(
         args.width_mult_list) == 1 else args.width_mult_list
 
-    net = OFAMobileNetV3(
-        n_classes=run_config.data_provider.n_classes,  bn_param=(args.bn_momentum, args.bn_eps),
-        dropout_rate=args.dropout, ks_list=args.ks_list, expand_ratio_list=args.expand_list, depth_list=args.expand_list
-    )
     # teacher model
-    if args.kd_ratio > 0:
-        args.teacher_model = MobileNetV3Large(
-            n_classes=run_config.data_provider.n_classes, bn_param=(
-                args.bn_momentum, args.bn_eps),
-            dropout_rate=0, width_mult=1.0, ks=7, expand_ratio=6, depth_param=4,
-        )
-        args.teacher_model.cuda()
+    args.teacher_model = MobileNetV3Large(
+        n_classes=run_config.data_provider.n_classes, bn_param=(
+            args.bn_momentum, args.bn_eps),
+        dropout_rate=0, width_mult=1.0, ks=7, expand_ratio=6, depth_param=4,
+    )
+    args.teacher_model.cuda()
 
     """ RunManager """
-    run_manager = RunManager(args.path, net, run_config)
+    run_manager = RunManager(args.path, args.teacher_model, run_config)
 
     run_manager.save_config()
 
-    # load teacher net weights
-    if args.kd_ratio > 0:
-        load_models(run_manager, args.teacher_model,
-                    model_path=args.teacher_path)
-
     # training
     from ofa.imagenet_classification.elastic_nn.training.progressive_shrinking import (
-        train_max, validate)
+        train_max, validate_max)
 
     validate_func_dict = {'image_size_list': {32} if isinstance(args.image_size, int) else sorted({24, 32}),
                           'ks_list': sorted({min(args.ks_list), max(args.ks_list)}),
                           'expand_ratio_list': sorted({min(args.expand_list), max(args.expand_list)}),
-                          'depth_list': sorted({min(net.depth_list), max(net.depth_list)})}
+                          }
 
     train_max(run_manager, args,
-            lambda _run_manager, epoch, is_test: validate(_run_manager, epoch, is_test, **validate_func_dict))
+            lambda _run_manager, epoch, is_test: validate_max(_run_manager, epoch, is_test, **validate_func_dict))
     

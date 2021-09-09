@@ -120,7 +120,7 @@ args.width_mult_list = '1.0'
 args.dy_conv_scaling_mode = 1
 args.independent_distributed_sampling = False
 
-args.kd_ratio = 0  # 1.0
+args.kd_ratio = 1.0
 args.kd_type = 'ce'
 
 
@@ -128,12 +128,9 @@ if __name__ == '__main__':
     os.makedirs(args.path, exist_ok=True)
 
     if args.kd_ratio > 0:
-        args.teacher_path = download_url(
-            'https://hanlab.mit.edu/files/OnceForAll/ofa_checkpoints/ofa_D4_E6_K7',
-            model_dir='.torch/ofa_checkpoints/0'
-        )
+        args.teacher_path = args.teacher_path = "/home/pdluser/project/once-for-all/exp/teachernet/checkpoint/model_best.pth.tar"
 
-    num_gpus = 0
+    num_gpus = 1
 
     torch.manual_seed(args.manual_seed)
     torch.cuda.manual_seed_all(args.manual_seed)
@@ -192,7 +189,8 @@ if __name__ == '__main__':
     # )
 
     net = OFAMobileNetV3(
-        n_classes=run_config.data_provider.n_classes,  bn_param=(args.bn_momentum, args.bn_eps),
+        n_classes=run_config.data_provider.n_classes,  bn_param=(
+            args.bn_momentum, args.bn_eps),
         dropout_rate=args.dropout, ks_list=args.ks_list, expand_ratio_list=args.expand_list, depth_list=args.expand_list
     )
     # teacher model
@@ -256,15 +254,9 @@ if __name__ == '__main__':
         from ofa.imagenet_classification.elastic_nn.training.progressive_shrinking import \
             train_elastic_expand
         if args.phase == 1:
-            args.ofa_checkpoint_path = download_url(
-                'https://hanlab.mit.edu/files/OnceForAll/ofa_checkpoints/ofa_D234_E6_K357',
-                model_dir='.torch/ofa_checkpoints/%d' % 0
-            )
+            args.ofa_checkpoint_path = "/home/pdluser/project/once-for-all/exp/teachernet/checkpoint/model_best.pth.tar"
         else:
-            args.ofa_checkpoint_path = download_url(
-                'https://hanlab.mit.edu/files/OnceForAll/ofa_checkpoints/ofa_D234_E46_K357',
-                model_dir='.torch/ofa_checkpoints/%d' % 0
-            )
+            args.ofa_checkpoint_path = "/home/pdluser/project/once-for-all/exp/teachernet/checkpoint/model_best.pth.tar"
         train_elastic_expand(train, run_manager, args, validate_func_dict)
     else:
         raise NotImplementedError

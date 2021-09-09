@@ -151,6 +151,7 @@ class MobileNetV3(MyNetwork):
 		current_state_dict = self.state_dict()
 
 		for key in state_dict:
+			print("key", key)
 			if key not in current_state_dict:
 				assert '.mobile_inverted_conv.' in key
 				new_key = key.replace('.mobile_inverted_conv.', '.conv.')
@@ -162,7 +163,7 @@ class MobileNetV3(MyNetwork):
 
 class MobileNetV3Large(MobileNetV3):
 
-	def __init__(self, n_classes=1000, width_mult=1.0, bn_param=(0.1, 1e-5), dropout_rate=0.2,
+	def __init__(self, n_classes=10, width_mult=1.0, bn_param=(0.1, 1e-5), dropout_rate=0.2,
 	             ks=None, expand_ratio=None, depth_param=None, stage_width_list=None):
 		input_channel = 16
 		last_channel = 1280

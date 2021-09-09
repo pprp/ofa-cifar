@@ -5,6 +5,7 @@ import numpy as np
 import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
+from torchvision.transforms.transforms import RandomCrop
 
 from .base_provider import DataProvider
 from ofa.utils.my_dataloader import MyRandomResizedCrop, MyDistributedSampler
@@ -24,7 +25,7 @@ class CifarDataProvider(DataProvider):
 		self._save_path = save_path
 
 		self.image_size = image_size  # int or list of int
-		self.distort_color = 'None' if distort_color is None else distort_color
+		# self.distort_color = 'None' if distort_color is None else distort_color
 		self.resize_scale = resize_scale
 
 		self._valid_transform_dict = {}
@@ -142,32 +143,13 @@ class CifarDataProvider(DataProvider):
 	def build_train_transform(self, image_size=None, print_log=True):
 		if image_size is None:
 			image_size = self.image_size
-		if print_log:
-			print('Color jitter: %s, resize_scale: %s, img_size: %s' %
-			      (self.distort_color, self.resize_scale, image_size))
-
-		if isinstance(image_size, list):
-			resize_transform_class = MyRandomResizedCrop
-			print('Use MyRandomResizedCrop: %s, \t %s' % MyRandomResizedCrop.get_candidate_image_size(),
-			      'sync=%s, continuous=%s' % (MyRandomResizedCrop.SYNC_DISTRIBUTED, MyRandomResizedCrop.CONTINUOUS))
-		else:
-			resize_transform_class = transforms.RandomResizedCrop
 
 		# random_resize_crop -> random_horizontal_flip
 		train_transforms = [
-			resize_transform_class(image_size, scale=(self.resize_scale, 1.0)),
+			transforms.RandomCrop(32,padding=4),
 			transforms.RandomHorizontalFlip(),
 		]
-
-		# color augmentation (optional)
-		color_transform = None
-		if self.distort_color == 'torch':
-			color_transform = transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1)
-		elif self.distort_color == 'tf':
-			color_transform = transforms.ColorJitter(brightness=32. / 255., saturation=0.5)
-		if color_transform is not None:
-			train_transforms.append(color_transform)
-
+		
 		train_transforms += [
 			transforms.ToTensor(),
 			self.normalize,
@@ -179,9 +161,8 @@ class CifarDataProvider(DataProvider):
 	def build_valid_transform(self, image_size=None):
 		if image_size is None:
 			image_size = self.active_img_size
+
 		return transforms.Compose([
-			transforms.Resize(int(math.ceil(image_size / 0.875))),
-			transforms.CenterCrop(image_size),
 			transforms.ToTensor(),
 			self.normalize,
 		])

@@ -14,9 +14,31 @@ from ofa.utils import DistributedMetric, list_mean, subset_mean, val2list, MyRan
 from ofa.imagenet_classification.run_manager import DistributedRunManager
 
 __all__ = [
-    'validate', 'train_one_epoch', 'train', 'load_models',
-    'train_elastic_depth', 'train_elastic_expand', 'train_elastic_width_mult',
+    'validate', 'train_one_epoch', 'train', 'load_models', 'validate_max',
+    'train_elastic_depth', 'train_elastic_expand', 'train_elastic_width_mult', 'train_max'
 ]
+
+
+def validate_max(run_manager, epoch=0, is_test=False, image_size_list=None,
+                 ks_list=None, expand_ratio_list=None, depth_list=None, width_mult_list=None, additional_setting=None):
+    dynamic_net = run_manager.net
+    if isinstance(dynamic_net, nn.DataParallel):
+        dynamic_net = dynamic_net.module
+
+    dynamic_net.eval()
+
+    valid_log = ''
+    run_manager.write_log('-' * 30 + ' Validate %s ' %
+                          'teachernet' + '-' * 30, 'train', should_print=False)
+    run_manager.write_log(dynamic_net.module_str,
+                          'train', should_print=False)
+
+    run_manager.reset_running_statistics(dynamic_net)
+    loss, (top1, top5) = run_manager.validate(epoch=epoch,
+                                              is_test=is_test, run_str='teachernet', net=dynamic_net)
+    valid_log += '%s (%.3f), ' % ('teachernet', top1)
+
+    return list_mean([loss]), list_mean([top1]), list_mean([top5]), valid_log
 
 
 def validate(run_manager, epoch=0, is_test=False, image_size_list=None,
@@ -223,7 +245,6 @@ def train_max_one_epoch(run_manager, args, epoch, warmup_epochs=0, warmup_lr=0):
                 # set random seed before sampling
                 subnet_seed = int('%d%.3d%.3d' % (epoch * nBatch + i, _, 0))
                 random.seed(subnet_seed)
-                dynamic_net.set_max_net()
 
                 output = run_manager.net(images)
                 loss = run_manager.train_criterion(output, labels)
