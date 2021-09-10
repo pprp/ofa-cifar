@@ -99,7 +99,7 @@ else:
     raise NotImplementedError
 args.manual_seed = 0
 
-args.lr_schedule_type = 'cosine'
+args.lr_schedule_type = 'sgdr'
 
 args.base_batch_size = 128
 args.valid_size = 10000

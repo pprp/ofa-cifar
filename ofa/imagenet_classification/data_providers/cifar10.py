@@ -361,7 +361,7 @@ class CifarDataProvider(DataProvider):
 		train_transforms = [
 			transforms.RandomCrop(32,padding=4),
 			transforms.RandomHorizontalFlip(),
-			AutoAugment(),
+			# AutoAugment(),
 		]
 		
 		train_transforms += [

@@ -169,7 +169,7 @@ class MobileNetV3Large(MobileNetV3):
 	def __init__(self, n_classes=10, width_mult=1.0, bn_param=(0.1, 1e-5), dropout_rate=0.2,
 	             ks=None, expand_ratio=None, depth_param=None, stage_width_list=None):
 		input_channel = 16
-		last_channel = 512
+		last_channel = 1280
 
 		input_channel = make_divisible(input_channel * width_mult, MyNetwork.CHANNEL_DIVISIBLE)
 		last_channel = make_divisible(last_channel * width_mult, MyNetwork.CHANNEL_DIVISIBLE) \
@@ -181,7 +181,7 @@ class MobileNetV3Large(MobileNetV3):
 				[3, 16, 16, False, 'relu', 1, 1],
 			],
 			'1': [
-				[3, 64, 24, False, 'relu', 2, None],  # 4
+				[3, 36, 24, False, 'relu', 2, None],  # 4
 				[3, 72, 24, False, 'relu', 1, None],  # 3
 			],
 			'2': [
@@ -197,16 +197,18 @@ class MobileNetV3Large(MobileNetV3):
 			],
 			'4': [
 				# [3, 480, 112, True, 'h_swish', 1, None],  # 6
-				[3, 280, 100, True, 'h_swish', 1, None],  # 6 
-				[3, 320, 100, True, 'h_swish', 1, None],  # 6
+				[3, 240, 100, True, 'h_swish', 1, None],  # 6 
+				[3, 300, 100, True, 'h_swish', 1, None],  # 6
 			],
 			'5': [
-				[5, 540, 120, True, 'h_swish', 2, None],  # 6
-				[5, 640, 120, True, 'h_swish', 1, None],  # 6
-				[5, 640, 120, True, 'h_swish', 1, None],  # 6
+				[5, 360, 120, True, 'h_swish', 2, None],  # 6
+				[5, 420, 120, True, 'h_swish', 1, None],  # 6
+				[5, 420, 120, True, 'h_swish', 1, None],  # 6
 			]
 		}
-
+		# 原始通道会导致过拟合，训练集100%，验证集82%
+		# 降低通道情况下会导致训练集和验证集同时下降准确率
+		# 略微提升通道：FLOPS 13.32M params:4.77M 200 epoch  训练集 89.4 验证集 88.2 last linear 1280 
 		cfg = self.adjust_cfg(cfg, ks, expand_ratio, depth_param, stage_width_list)
 		# width multiplier on mobile setting, change `exp: 1` and `c: 2`
 		for stage_id, block_config_list in cfg.items():

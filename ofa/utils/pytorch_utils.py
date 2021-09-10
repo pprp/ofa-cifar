@@ -210,26 +210,35 @@ def build_optimizer(net_params, opt_type, opt_param, init_lr, weight_decay, no_d
 
 """ learning rate schedule """
 
+def sgdr(period, batch_idx):
+    # returns normalised anytime sgdr schedule given period and batch_idx
+    # best performing settings reported in paper are T_0 = 10, T_mult=2
+    # so always use T_mult=2
+    batch_idx = float(batch_idx)
+    restart_period = period
+    while batch_idx/restart_period > 1.:
+        batch_idx = batch_idx - restart_period
+        restart_period = restart_period * 2.
 
-def scale_fn(x):
-    return 1/(2. ** (x-1))
-
+    radians = math.pi*(batch_idx/restart_period)
+    return 0.5*(1.0 + math.cos(radians))
 
 def calc_learning_rate(epoch, init_lr, n_epochs, batch=0, nBatch=None, lr_schedule_type='cosine', max_lr=0.1, base_lr=0.001):
-
+    '''
+    batch: i 当前train_loader的第n个batch
+    nBatch: len(train_loader)
+    ref: https://github.com/gngdb/pytorch-cifar-sgdr/blob/master/main.py
+    '''
     if lr_schedule_type == 'cosine':
         t_total = n_epochs * nBatch
         t_cur = epoch * nBatch + batch
         lr = 0.5 * init_lr * (1 + math.cos(math.pi * t_cur / t_total))
-    elif lr_schedule_type == 'cyclicLR':
+    elif lr_schedule_type == 'sgdr':
         t_total = n_epochs * nBatch
         t_cur = epoch * nBatch + batch
 
-        cycle = np.floor(1+t_cur/(2*2000))
-        x = np.abs(t_cur/2000 - 2 * cycle + 1)
-        lr = base_lr + (max_lr-base_lr)*np.maximum(0, (1-x))*scale_fn(x)
-
-        lr = init_lr
+        lr_period = 10 * nBatch 
+        lr = init_lr * sgdr(lr_period, t_total)
     elif lr_schedule_type is None:
         lr = init_lr
     else:
